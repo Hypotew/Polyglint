@@ -1,0 +1,50 @@
+from abc import ABC, abstractmethod
+from collections.abc import Iterator
+from pathlib import Path
+from polyglint.violation import Violation, Severity
+
+def _find_all(content: str, substring: str) -> Iterator[int]:
+    pos = content.find(substring)
+    while pos != -1:
+        yield pos
+        pos = content.find(substring, pos + 1)
+
+
+class BaseChecker(ABC):
+    def check(self, file_path: Path) -> list[Violation]:
+        return self._check_generic(file_path) + self._check_language(file_path)
+
+    def _check_generic(self, file_path: Path) -> list[Violation]:
+        violations = []
+        lines = file_path.read_text(encoding="utf-8").splitlines()
+
+        for i, line in enumerate(lines, start=1):
+            trailing = len(line) - len(line.rstrip(" \t"))
+            if trailing > 0:
+                message = "trailing space" if trailing == 1 else f"{trailing} trailing spaces"
+                violations.append(Violation(
+                    file=str(file_path),
+                    line=i,
+                    col=len(line.rstrip(" \t")) + 1,
+                    rule="C-G7",
+                    message=message,
+                    severity=Severity.MINOR,
+                ))
+
+        content = file_path.read_text(encoding="utf-8")
+        for i, pos in enumerate(_find_all(content, "\r"), start=1):
+            line_num = content[:pos].count("\n") + 1
+            violations.append(Violation(
+                file=str(file_path),
+                line=line_num,
+                col=pos,
+                rule="C-G6",
+                message="\\r-style line ending",
+                severity=Severity.MINOR,
+            ))
+
+        return violations
+
+    def _check_language(self, file_path: Path) -> list[Violation]:
+        ...
+
