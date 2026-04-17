@@ -3,6 +3,9 @@ from collections.abc import Iterator
 from pathlib import Path
 from polyglint.violation import Violation, Severity
 
+MAX_LINE_LENGTH = 80
+
+
 def _find_all(content: str, substring: str) -> Iterator[int]:
     pos = content.find(substring)
     while pos != -1:
@@ -68,7 +71,28 @@ class BaseChecker(ABC):
                 message="\\r-style line ending",
                 severity=Severity.MINOR,
             ))
-            
+
+        for i, line in enumerate(lines, start=1): # C-F3 - Max line length
+            if len(line) > MAX_LINE_LENGTH:
+                violations.append(Violation(
+                    file=str(file_path),
+                    line=i,
+                    col=MAX_LINE_LENGTH + 1,
+                    rule="C-F3",
+                    message=f"{len(line)}-character line",
+                    severity=Severity.MAJOR,
+                ))
+
+        if content and not content.endswith("\n"):
+            violations.append(Violation(
+                file=str(file_path),
+                line=len(lines),
+                col=len(lines[-1]) + 1,
+                rule="C-A3",
+                message="file not ending with a newline",
+                severity=Severity.INFO,
+            ))
+
         for i, line in enumerate(lines, start=1): # C-L2 - Indentation
             indent = line[:len(line) - len(line.lstrip(" \t"))]
             if "\t" in indent:
