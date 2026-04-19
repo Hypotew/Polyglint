@@ -11,9 +11,8 @@ Polyglint enforces a consistent set of style rules across all your files and rep
 ```bash
 git clone https://github.com/Hypotew/Polyglint.git
 cd Polyglint
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
+./install.sh
+source ~/.zshrc  # or ~/.bashrc
 ```
 
 ## Usage
