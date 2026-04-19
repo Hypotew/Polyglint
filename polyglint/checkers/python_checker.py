@@ -61,4 +61,41 @@ class PythonChecker(BaseChecker):
                         severity=Severity.MAJOR,
                     ))
 
+        func_count = 0  # C-O3 - too many functions
+        non_static_count = 0
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                func_count += 1
+                if node in tree.body:
+                    non_static_count += 1
+                total_exceeded = func_count > 10
+                non_static_exceeded = non_static_count > 5
+                if total_exceeded and non_static_exceeded:
+                    violations.append(Violation(
+                        file=str(file_path),
+                        line=node.lineno,
+                        col=node.col_offset + 1,
+                        rule="C-O3",
+                        message=f"{_ordinal(non_static_count)} non-static and {_ordinal(func_count)} function in the file",
+                        severity=Severity.MAJOR,
+                    ))
+                elif non_static_exceeded:
+                    violations.append(Violation(
+                        file=str(file_path),
+                        line=node.lineno,
+                        col=node.col_offset + 1,
+                        rule="C-O3",
+                        message=f"{_ordinal(non_static_count)} non-static function in the file",
+                        severity=Severity.MAJOR,
+                    ))
+                elif total_exceeded:
+                    violations.append(Violation(
+                        file=str(file_path),
+                        line=node.lineno,
+                        col=node.col_offset + 1,
+                        rule="C-O3",
+                        message=f"{_ordinal(func_count)} function in the file",
+                        severity=Severity.MAJOR,
+                    ))
+
         return violations
