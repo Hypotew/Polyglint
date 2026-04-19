@@ -8,61 +8,61 @@ FUNC_PATTERN = re.compile(
 )
 
 
+def _make(f, line, col, rule, msg, sev):
+    return Violation(
+        file=f, line=line, col=col, rule=rule, message=msg, severity=sev
+    )
+
+
+def _parse_funcs(lines: list) -> list:
+    funcs = []
+    for i, line in enumerate(lines, start=1):
+        match = FUNC_PATTERN.search(line)
+        if not match:
+            continue
+        name = match.group(1).split(".")[-1].split(":")[-1]
+        params = [p.strip() for p in match.group(2).split(",") if p.strip()]
+        funcs.append((i, match.start(1) + 1, match.start(2) + 1, name, params))
+    return funcs
+
+
+def _check_func_naming(funcs: list, f: str) -> list[Violation]:
+    out = []
+    for line, col, _, name, _ in funcs:
+        if len(name) < 3:
+            out.append(_make(f, line, col, "C-F2",
+                "function name too short", Severity.MINOR))
+        if not re.match(r'^[a-z][a-z0-9_]*$', name):
+            out.append(_make(f, line, col, "C-F2",
+                "non-snake-case function name", Severity.MINOR))
+    return out
+
+
+def _check_func_params(funcs: list, f: str) -> list[Violation]:
+    out = []
+    for line, _, col_p, _, params in funcs:
+        for j, _ in enumerate(params[4:], start=5):
+            msg = f"{ordinal(j)} parameter in function"
+            out.append(_make(f, line, col_p, "C-F5", msg, Severity.MAJOR))
+    return out
+
+
+def _check_func_count(funcs: list, f: str) -> list[Violation]:
+    out = []
+    for idx, (line, col, _, _, _) in enumerate(funcs, start=1):
+        if idx > 10:
+            msg = f"{ordinal(idx)} function in the file"
+            out.append(_make(f, line, col, "C-O3", msg, Severity.MAJOR))
+    return out
+
+
 class LuaChecker(BaseChecker):
     def _check_language(self, file_path: Path) -> list[Violation]:
-        violations = []
         lines = file_path.read_text(encoding="utf-8").splitlines()
-
-        func_count = 0
-
-        for i, line in enumerate(lines, start=1):
-            match = FUNC_PATTERN.search(line)
-            if not match:
-                continue
-
-            func_count += 1
-            name = match.group(1).split(".")[-1].split(":")[-1]
-            params = [p.strip() for p in match.group(2).split(",") if p.strip()]
-
-            if len(name) < 3:
-                violations.append(Violation(
-                    file=str(file_path),
-                    line=i,
-                    col=match.start(1) + 1,
-                    rule="C-F2",
-                    message="function name too short",
-                    severity=Severity.MINOR,
-                ))
-            if not re.match(r'^[a-z][a-z0-9_]*$', name):
-                violations.append(Violation(
-                    file=str(file_path),
-                    line=i,
-                    col=match.start(1) + 1,
-                    rule="C-F2",
-                    message="non-snake-case function name",
-                    severity=Severity.MINOR,
-                ))
-
-            for j, _ in enumerate(params[4:], start=5):
-                violations.append(Violation(
-                    file=str(file_path),
-                    line=i,
-                    col=match.start(2) + 1,
-                    rule="C-F5",
-                    message=f"{ordinal(j)} parameter in function",
-                    severity=Severity.MAJOR,
-                ))
-
-            if func_count > 10:
-                violations.append(Violation(
-                    file=str(file_path),
-                    line=i,
-                    col=match.start(1) + 1,
-                    rule="C-O3",
-                    message=f"{ordinal(func_count)} function in the file",
-                    severity=Severity.MAJOR,
-                ))
-
-        return violations
-
-
+        funcs = _parse_funcs(lines)
+        f = str(file_path)
+        return (
+            _check_func_naming(funcs, f)
+            + _check_func_params(funcs, f)
+            + _check_func_count(funcs, f)
+        )
