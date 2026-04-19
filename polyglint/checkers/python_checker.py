@@ -1,14 +1,8 @@
 import ast
 import re
 from pathlib import Path
-from polyglint.checkers.base import BaseChecker
+from polyglint.checkers.base import BaseChecker, ordinal
 from polyglint.violation import Violation, Severity
-
-
-def _ordinal(n: int) -> str:
-    if 11 <= n % 100 <= 13:
-        return f"{n}th"
-    return f"{n}{['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]}"
 
 
 class PythonChecker(BaseChecker):
@@ -44,7 +38,7 @@ class PythonChecker(BaseChecker):
                         line=param.lineno,
                         col=param.col_offset + 1,
                         rule="C-F5",
-                        message=f"{_ordinal(i)} parameter in function",
+                        message=f"{ordinal(i)} parameter in function",
                         severity=Severity.MAJOR,
                     ))
 
@@ -57,7 +51,7 @@ class PythonChecker(BaseChecker):
                         line=line_num,
                         col=1,
                         rule="C-F4",
-                        message=f"{_ordinal(line_in_func)} line in the function",
+                        message=f"{ordinal(line_in_func)} line in the function",
                         severity=Severity.MAJOR,
                     ))
 
@@ -76,7 +70,7 @@ class PythonChecker(BaseChecker):
                         line=node.lineno,
                         col=node.col_offset + 1,
                         rule="C-O3",
-                        message=f"{_ordinal(non_static_count)} non-static and {_ordinal(func_count)} function in the file",
+                        message=f"{ordinal(non_static_count)} non-static and {ordinal(func_count)} function in the file",
                         severity=Severity.MAJOR,
                     ))
                 elif non_static_exceeded:
@@ -85,7 +79,7 @@ class PythonChecker(BaseChecker):
                         line=node.lineno,
                         col=node.col_offset + 1,
                         rule="C-O3",
-                        message=f"{_ordinal(non_static_count)} non-static function in the file",
+                        message=f"{ordinal(non_static_count)} non-static function in the file",
                         severity=Severity.MAJOR,
                     ))
                 elif total_exceeded:
@@ -94,7 +88,7 @@ class PythonChecker(BaseChecker):
                         line=node.lineno,
                         col=node.col_offset + 1,
                         rule="C-O3",
-                        message=f"{_ordinal(func_count)} function in the file",
+                        message=f"{ordinal(func_count)} function in the file",
                         severity=Severity.MAJOR,
                     ))
 
