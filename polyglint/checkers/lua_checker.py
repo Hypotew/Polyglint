@@ -8,12 +8,6 @@ FUNC_PATTERN = re.compile(
 )
 
 
-def _make(f, line, col, rule, msg, sev):
-    return Violation(
-        file=f, line=line, col=col, rule=rule, message=msg, severity=sev
-    )
-
-
 def _parse_funcs(lines: list) -> list:
     funcs = []
     for i, line in enumerate(lines, start=1):
@@ -30,11 +24,15 @@ def _check_func_naming(funcs: list, f: str) -> list[Violation]:
     out = []
     for line, col, _, name, _ in funcs:
         if len(name) < 3:
-            out.append(_make(f, line, col, "C-F2",
-                "function name too short", Severity.MINOR))
+            out.append(Violation(
+                file=f, line=line, col=col, rule="C-F2",
+                message="function name too short", severity=Severity.MINOR
+            ))
         if not re.match(r'^[a-z][a-z0-9_]*$', name):
-            out.append(_make(f, line, col, "C-F2",
-                "non-snake-case function name", Severity.MINOR))
+            out.append(Violation(
+                file=f, line=line, col=col, rule="C-F2",
+                message="non-snake-case function name", severity=Severity.MINOR
+            ))
     return out
 
 
@@ -43,7 +41,10 @@ def _check_func_params(funcs: list, f: str) -> list[Violation]:
     for line, _, col_p, _, params in funcs:
         for j, _ in enumerate(params[4:], start=5):
             msg = f"{ordinal(j)} parameter in function"
-            out.append(_make(f, line, col_p, "C-F5", msg, Severity.MAJOR))
+            out.append(Violation(
+                file=f, line=line, col=col_p, rule="C-F5",
+                message=msg, severity=Severity.MAJOR
+            ))
     return out
 
 
@@ -52,7 +53,10 @@ def _check_func_count(funcs: list, f: str) -> list[Violation]:
     for idx, (line, col, _, _, _) in enumerate(funcs, start=1):
         if idx > 10:
             msg = f"{ordinal(idx)} function in the file"
-            out.append(_make(f, line, col, "C-O3", msg, Severity.MAJOR))
+            out.append(Violation(
+                file=f, line=line, col=col, rule="C-O3",
+                message=msg, severity=Severity.MAJOR
+            ))
     return out
 
 
