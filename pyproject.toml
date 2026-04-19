@@ -9,6 +9,9 @@ description = "Universal code style enforcer for Lua, Python, and JavaScript"
 requires-python = ">=3.10"
 dependencies = []
 
+[project.optional-dependencies]
+dev = ["pytest"]
+
 [project.scripts]
 polyglint = "polyglint.cli:main"
 
