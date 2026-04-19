@@ -6,6 +6,12 @@ from polyglint.violation import Violation, Severity
 MAX_LINE_LENGTH = 80
 
 
+def ordinal(n: int) -> str:
+    if 11 <= n % 100 <= 13:
+        return f"{n}th"
+    return f"{n}{['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]}"
+
+
 def _find_all(content: str, substring: str) -> Iterator[int]:
     pos = content.find(substring)
     while pos != -1:
