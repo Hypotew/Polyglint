@@ -20,7 +20,7 @@ class PythonChecker(BaseChecker):
 
 def _make(f: str, line: int, col: int, rule: str, msg: str, sev: Severity):
     return Violation(file=f, line=line, col=col, rule=rule, message=msg,
-                     severity=sev)
+                    severity=sev)
 
 
 def _check_func_naming(tree: ast.Module, f: str) -> list[Violation]:
@@ -30,11 +30,11 @@ def _check_func_naming(tree: ast.Module, f: str) -> list[Violation]:
             continue
         if len(node.name) < 3:
             out.append(_make(f, node.lineno, node.col_offset + 1,
-                             "C-F2", "function name too short", Severity.MINOR))
+                            "C-F2", "function name too short", Severity.MINOR))
         if not re.match(r'^[a-z_][a-z0-9_]*$', node.name):
             out.append(_make(f, node.lineno, node.col_offset + 1,
-                             "C-F2", "non-snake-case function name",
-                             Severity.MINOR))
+                            "C-F2", "non-snake-case function name",
+                            Severity.MINOR))
     return out
 
 
@@ -45,8 +45,8 @@ def _check_func_params(tree: ast.Module, f: str) -> list[Violation]:
             continue
         for i, param in enumerate(node.args.args[4:], start=5):
             out.append(_make(f, param.lineno, param.col_offset + 1,
-                             "C-F5", f"{ordinal(i)} parameter in function",
-                             Severity.MAJOR))
+                            "C-F5", f"{ordinal(i)} parameter in function",
+                            Severity.MAJOR))
     return out
 
 
@@ -58,8 +58,8 @@ def _check_func_length(tree: ast.Module, f: str) -> list[Violation]:
         body_start = node.lineno + 1
         for line_num in range(body_start + 20, node.end_lineno + 1):
             out.append(_make(f, line_num, 1, "C-F4",
-                             f"{ordinal(line_num - body_start + 1)} line in the function",
-                             Severity.MAJOR))
+                            f"{ordinal(line_num - body_start + 1)} line in the function",
+                            Severity.MAJOR))
     return out
 
 
@@ -77,15 +77,15 @@ def _check_func_count(tree: ast.Module, f: str) -> list[Violation]:
         ns_ex = non_static_count > 5
         if total_ex and ns_ex:
             msg = (f"{ordinal(non_static_count)} non-static and "
-                   f"{ordinal(func_count)} function in the file")
+                f"{ordinal(func_count)} function in the file")
             out.append(_make(f, node.lineno, node.col_offset + 1,
-                             "C-O3", msg, Severity.MAJOR))
+                            "C-O3", msg, Severity.MAJOR))
         elif ns_ex:
             out.append(_make(f, node.lineno, node.col_offset + 1, "C-O3",
-                             f"{ordinal(non_static_count)} non-static function in the file",
-                             Severity.MAJOR))
+                            f"{ordinal(non_static_count)} non-static function in the file",
+                            Severity.MAJOR))
         elif total_ex:
             out.append(_make(f, node.lineno, node.col_offset + 1, "C-O3",
-                             f"{ordinal(func_count)} function in the file",
-                             Severity.MAJOR))
+                            f"{ordinal(func_count)} function in the file",
+                            Severity.MAJOR))
     return out
