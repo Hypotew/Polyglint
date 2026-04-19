@@ -2,7 +2,9 @@ from pathlib import Path
 from polyglint.checkers import get_checker
 from polyglint.violation import Violation
 
-EXCLUDED_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv"}
+EXCLUDED_DIRS = {
+    ".git", "__pycache__", "node_modules", ".venv", "venv", "tests"
+}
 
 
 def run(paths: list[Path]) -> dict[str, list[Violation]]:
