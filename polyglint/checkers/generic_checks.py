@@ -5,22 +5,22 @@ MAX_LINE_LENGTH = 80
 
 def _check_empty_lines(lines: list, f: str) -> list[Violation]:
     out = []
-    for i, line in enumerate(lines, start=1):
-        if line.strip() == "":
-            out.append(Violation(
-                file=f, line=i, col=1, rule="C-G8",
-                message="leading empty line", severity=Severity.MINOR
-            ))
-        else:
-            break
-    for i in range(len(lines) - 1, -1, -1):
-        if lines[i].strip() == "":
-            out.append(Violation(
-                file=f, line=i + 1, col=1, rule="C-G8",
-                message="trailing empty line", severity=Severity.MINOR
-            ))
-        else:
-            break
+    first_content = next(
+        (i for i, line in enumerate(lines) if line.strip()), len(lines)
+    )
+    last_content = next(
+        (i for i in range(len(lines) - 1, -1, -1) if lines[i].strip()), -1
+    )
+    for i in range(first_content):
+        out.append(Violation(
+            file=f, line=i + 1, col=1, rule="C-G8",
+            message="leading empty line", severity=Severity.MINOR
+        ))
+    for i in range(max(last_content + 1, first_content), len(lines)):
+        out.append(Violation(
+            file=f, line=i + 1, col=1, rule="C-G8",
+            message="trailing empty line", severity=Severity.MINOR
+        ))
     return out
 
 
@@ -45,8 +45,9 @@ def _check_line_endings(content: str, f: str) -> list[Violation]:
     pos = content.find("\r")
     while pos != -1:
         line_num = content[:pos].count("\n") + 1
+        col = pos - content.rfind("\n", 0, pos)
         out.append(Violation(
-            file=f, line=line_num, col=pos, rule="C-G6",
+            file=f, line=line_num, col=col, rule="C-G6",
             message="\\r-style line ending", severity=Severity.MINOR
         ))
         pos = content.find("\r", pos + 1)
