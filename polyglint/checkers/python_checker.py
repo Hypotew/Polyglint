@@ -7,89 +7,93 @@ from polyglint.violation import Violation, Severity
 
 class PythonChecker(BaseChecker):
     def _check_language(self, file_path: Path) -> list[Violation]:
-        violations = []
         source = file_path.read_text(encoding="utf-8")
         tree = ast.parse(source)
+        f = str(file_path)
+        return (
+            _check_func_naming(tree, f)
+            + _check_func_params(tree, f)
+            + _check_func_length(tree, f)
+            + _check_func_count(tree, f)
+        )
 
-        for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef):
-                if len(node.name) < 3:  # C-F2 - function name too short
-                    violations.append(Violation(
-                        file=str(file_path),
-                        line=node.lineno,
-                        col=node.col_offset + 1,
-                        rule="C-F2",
-                        message="function name too short",
-                        severity=Severity.MINOR,
-                    ))
-                if not re.match(r'^[a-z_][a-z0-9_]*$', node.name):  # C-F2 - snake_case
-                    violations.append(Violation(
-                        file=str(file_path),
-                        line=node.lineno,
-                        col=node.col_offset + 1,
-                        rule="C-F2",
-                        message="non-snake-case function name",
-                        severity=Severity.MINOR,
-                    ))
 
-                for i, param in enumerate(node.args.args[4:], start=5):  # C-F5 - too many parameters
-                    violations.append(Violation(
-                        file=str(file_path),
-                        line=param.lineno,
-                        col=param.col_offset + 1,
-                        rule="C-F5",
-                        message=f"{ordinal(i)} parameter in function",
-                        severity=Severity.MAJOR,
-                    ))
+def _check_func_naming(tree: ast.Module, f: str) -> list[Violation]:
+    out = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        col = node.col_offset + 1
+        if len(node.name) < 3:
+            out.append(Violation(
+                file=f, line=node.lineno, col=col, rule="C-F2",
+                message="function name too short", severity=Severity.MINOR
+            ))
+        if not re.match(r'^[a-z_][a-z0-9_]*$', node.name):
+            out.append(Violation(
+                file=f, line=node.lineno, col=col, rule="C-F2",
+                message="non-snake-case function name", severity=Severity.MINOR
+            ))
+    return out
 
-                body_start = node.lineno + 1  # C-F4 - function too long
-                body_end = node.end_lineno
-                for line_num in range(body_start + 20, body_end + 1):
-                    line_in_func = line_num - body_start + 1
-                    violations.append(Violation(
-                        file=str(file_path),
-                        line=line_num,
-                        col=1,
-                        rule="C-F4",
-                        message=f"{ordinal(line_in_func)} line in the function",
-                        severity=Severity.MAJOR,
-                    ))
 
-        func_count = 0  # C-O3 - too many functions
-        non_static_count = 0
-        for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef):
-                func_count += 1
-                if node in tree.body:
-                    non_static_count += 1
-                total_exceeded = func_count > 10
-                non_static_exceeded = non_static_count > 5
-                if total_exceeded and non_static_exceeded:
-                    violations.append(Violation(
-                        file=str(file_path),
-                        line=node.lineno,
-                        col=node.col_offset + 1,
-                        rule="C-O3",
-                        message=f"{ordinal(non_static_count)} non-static and {ordinal(func_count)} function in the file",
-                        severity=Severity.MAJOR,
-                    ))
-                elif non_static_exceeded:
-                    violations.append(Violation(
-                        file=str(file_path),
-                        line=node.lineno,
-                        col=node.col_offset + 1,
-                        rule="C-O3",
-                        message=f"{ordinal(non_static_count)} non-static function in the file",
-                        severity=Severity.MAJOR,
-                    ))
-                elif total_exceeded:
-                    violations.append(Violation(
-                        file=str(file_path),
-                        line=node.lineno,
-                        col=node.col_offset + 1,
-                        rule="C-O3",
-                        message=f"{ordinal(func_count)} function in the file",
-                        severity=Severity.MAJOR,
-                    ))
+def _check_func_params(tree: ast.Module, f: str) -> list[Violation]:
+    out = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        for i, param in enumerate(node.args.args[4:], start=5):
+            msg = f"{ordinal(i)} parameter in function"
+            out.append(Violation(
+                file=f, line=param.lineno, col=param.col_offset + 1,
+                rule="C-F5", message=msg, severity=Severity.MAJOR
+            ))
+    return out
 
-        return violations
+
+def _check_func_length(tree: ast.Module, f: str) -> list[Violation]:
+    out = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        body_start = node.lineno + 1
+        for line_num in range(body_start + 20, node.end_lineno + 1):
+            n = line_num - body_start + 1
+            msg = f"{ordinal(n)} line in the function"
+            out.append(Violation(
+                file=f, line=line_num, col=1, rule="C-F4",
+                message=msg, severity=Severity.MAJOR
+            ))
+    return out
+
+
+def _func_count_violation(f, node, func_count, non_static_count):
+    col = node.col_offset + 1
+    ns = ordinal(non_static_count)
+    total = ordinal(func_count)
+    if func_count > 10 and non_static_count > 5:
+        msg = f"{ns} non-static and {total} function in the file"
+    elif non_static_count > 5:
+        msg = f"{ns} non-static function in the file"
+    else:
+        msg = f"{total} function in the file"
+    return Violation(
+        file=f, line=node.lineno, col=col, rule="C-O3",
+        message=msg, severity=Severity.MAJOR
+    )
+
+
+def _check_func_count(tree: ast.Module, f: str) -> list[Violation]:
+    out = []
+    func_count = 0
+    non_static_count = 0
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        func_count += 1
+        if node in tree.body:
+            non_static_count += 1
+        if func_count > 10 or non_static_count > 5:
+            v = _func_count_violation(f, node, func_count, non_static_count)
+            out.append(v)
+    return out

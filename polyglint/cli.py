@@ -8,7 +8,8 @@ from polyglint.reporter import report
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="polyglint",
-        description="Universal code style enforcer for Python, JavaScript, and Lua",
+        description="Universal code style enforcer"
+        " for Python, JavaScript, and Lua",
     )
     parser.add_argument(
         "paths",
