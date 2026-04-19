@@ -21,7 +21,7 @@ class PythonChecker(BaseChecker):
 def _check_func_naming(tree: ast.Module, f: str) -> list[Violation]:
     out = []
     for node in ast.walk(tree):
-        if not isinstance(node, ast.FunctionDef):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
         col = node.col_offset + 1
         if len(node.name) < 3:
@@ -40,7 +40,7 @@ def _check_func_naming(tree: ast.Module, f: str) -> list[Violation]:
 def _check_func_params(tree: ast.Module, f: str) -> list[Violation]:
     out = []
     for node in ast.walk(tree):
-        if not isinstance(node, ast.FunctionDef):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
         for i, param in enumerate(node.args.args[4:], start=5):
             msg = f"{ordinal(i)} parameter in function"
@@ -54,7 +54,7 @@ def _check_func_params(tree: ast.Module, f: str) -> list[Violation]:
 def _check_func_length(tree: ast.Module, f: str) -> list[Violation]:
     out = []
     for node in ast.walk(tree):
-        if not isinstance(node, ast.FunctionDef):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
         body_start = node.lineno + 1
         for line_num in range(body_start + 20, node.end_lineno + 1):
@@ -88,7 +88,7 @@ def _check_func_count(tree: ast.Module, f: str) -> list[Violation]:
     func_count = 0
     non_static_count = 0
     for node in ast.walk(tree):
-        if not isinstance(node, ast.FunctionDef):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
         func_count += 1
         if node in tree.body:
