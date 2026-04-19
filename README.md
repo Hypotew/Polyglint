@@ -25,6 +25,8 @@ polyglint .
 polyglint src/ main.py
 ```
 
+> The `tests/` directory is excluded from checks by default, along with `.git`, `__pycache__`, `node_modules`, and `.venv`.
+
 ## Output
 
 ```
