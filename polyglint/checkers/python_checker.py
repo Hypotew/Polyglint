@@ -38,6 +38,16 @@ class PythonChecker(BaseChecker):
                         severity=Severity.MINOR,
                     ))
 
+                for i, param in enumerate(node.args.args[4:], start=5):  # C-F5 - too many parameters
+                    violations.append(Violation(
+                        file=str(file_path),
+                        line=param.lineno,
+                        col=param.col_offset + 1,
+                        rule="C-F5",
+                        message=f"{_ordinal(i)} parameter in function",
+                        severity=Severity.MAJOR,
+                    ))
+
                 body_start = node.lineno + 1  # C-F4 - function too long
                 body_end = node.end_lineno
                 for line_num in range(body_start + 20, body_end + 1):
