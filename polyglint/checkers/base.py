@@ -19,109 +19,100 @@ def _find_all(content: str, substring: str) -> Iterator[int]:
         pos = content.find(substring, pos + 1)
 
 
+def _make(file: str, line: int, col: int, rule: str, msg: str, sev: Severity):
+    return Violation(file=file, line=line, col=col, rule=rule, message=msg,
+                     severity=sev)
+
+
 class BaseChecker(ABC):
     def check(self, file_path: Path) -> list[Violation]:
         return self._check_generic(file_path) + self._check_language(file_path)
 
     def _check_generic(self, file_path: Path) -> list[Violation]:
-        violations = []
-        lines = file_path.read_text(encoding="utf-8").splitlines()
+        content = file_path.read_text(encoding="utf-8")
+        lines = content.splitlines()
+        f = str(file_path)
+        return (
+            _check_leading(lines, f)
+            + _check_trailing(lines, f)
+            + _check_trailing_whitespace(lines, f)
+            + _check_line_endings(content, f)
+            + _check_line_length(lines, f)
+            + _check_newline_eof(content, lines, f)
+            + _check_indentation(lines, f)
+        )
 
-        for i, line in enumerate(lines, start=1): # C-G8 - leading empty lines
-            if line.strip() == "":
-                violations.append(Violation(
-                    file=str(file_path),
-                    line=i,
-                    col=1,
-                    rule="C-G8",
-                    message="leading empty line",
-                    severity=Severity.MINOR,
-                ))
-            else:
-                break
-
-        for i in range(len(lines) - 1, -1, -1): # C-G8 - trailing empty lines
-            if lines[i].strip() == "":
-                violations.append(Violation(
-                    file=str(file_path),
-                    line=i + 1,
-                    col=1,
-                    rule="C-G8",
-                    message="trailing empty line",
-                    severity=Severity.MINOR,
-                ))
-            else:
-                break
-
-        for i, line in enumerate(lines, start=1): # C-G7 - Trailing whitespace
-            trailing = len(line) - len(line.rstrip(" \t"))
-            if trailing > 0:
-                message = "trailing space" if trailing == 1 else f"{trailing} trailing spaces"
-                violations.append(Violation(
-                    file=str(file_path),
-                    line=i,
-                    col=len(line.rstrip(" \t")) + 1,
-                    rule="C-G7",
-                    message=message,
-                    severity=Severity.MINOR,
-                ))
-
-        content = file_path.read_text(encoding="utf-8") # C-G6 - Line endings
-        for i, pos in enumerate(_find_all(content, "\r"), start=1):
-            line_num = content[:pos].count("\n") + 1
-            violations.append(Violation(
-                file=str(file_path),
-                line=line_num,
-                col=pos,
-                rule="C-G6",
-                message="\\r-style line ending",
-                severity=Severity.MINOR,
-            ))
-
-        for i, line in enumerate(lines, start=1): # C-F3 - Max line length
-            if len(line) > MAX_LINE_LENGTH:
-                violations.append(Violation(
-                    file=str(file_path),
-                    line=i,
-                    col=MAX_LINE_LENGTH + 1,
-                    rule="C-F3",
-                    message=f"{len(line)}-character line",
-                    severity=Severity.MAJOR,
-                ))
-
-        if content and not content.endswith("\n"):
-            violations.append(Violation(
-                file=str(file_path),
-                line=len(lines),
-                col=len(lines[-1]) + 1,
-                rule="C-A3",
-                message="file not ending with a newline",
-                severity=Severity.INFO,
-            ))
-
-        for i, line in enumerate(lines, start=1): # C-L2 - Indentation
-            indent = line[:len(line) - len(line.lstrip(" \t"))]
-            if "\t" in indent:
-                violations.append(Violation(
-                    file=str(file_path),
-                    line=i,
-                    col=indent.index("\t") + 1,
-                    rule="C-L2",
-                    message="tab used for indentation",
-                    severity=Severity.MINOR,
-                ))
-            elif len(indent) % 4 != 0:
-                violations.append(Violation(
-                    file=str(file_path),
-                    line=i,
-                    col=1,
-                    rule="C-L2",
-                    message="indentation not done with groups of 4 spaces",
-                    severity=Severity.MINOR,
-                ))
-
-        return violations
-
+    @abstractmethod
     def _check_language(self, file_path: Path) -> list[Violation]:
         ...
 
+
+def _check_leading(lines: list, f: str) -> list[Violation]:
+    out = []
+    for i, line in enumerate(lines, start=1):
+        if line.strip() == "":
+            out.append(_make(f, i, 1, "C-G8", "leading empty line", Severity.MINOR))
+        else:
+            break
+    return out
+
+
+def _check_trailing(lines: list, f: str) -> list[Violation]:
+    out = []
+    for i in range(len(lines) - 1, -1, -1):
+        if lines[i].strip() == "":
+            out.append(_make(f, i + 1, 1, "C-G8", "trailing empty line",
+                             Severity.MINOR))
+        else:
+            break
+    return out
+
+
+def _check_trailing_whitespace(lines: list, f: str) -> list[Violation]:
+    out = []
+    for i, line in enumerate(lines, start=1):
+        trailing = len(line) - len(line.rstrip(" \t"))
+        if trailing > 0:
+            msg = "trailing space" if trailing == 1 else f"{trailing} trailing spaces"
+            out.append(_make(f, i, len(line.rstrip(" \t")) + 1, "C-G7", msg,
+                             Severity.MINOR))
+    return out
+
+
+def _check_line_endings(content: str, f: str) -> list[Violation]:
+    out = []
+    for pos in _find_all(content, "\r"):
+        line_num = content[:pos].count("\n") + 1
+        out.append(_make(f, line_num, pos, "C-G6", "\\r-style line ending",
+                         Severity.MINOR))
+    return out
+
+
+def _check_line_length(lines: list, f: str) -> list[Violation]:
+    out = []
+    for i, line in enumerate(lines, start=1):
+        if len(line) > MAX_LINE_LENGTH:
+            out.append(_make(f, i, MAX_LINE_LENGTH + 1, "C-F3",
+                             f"{len(line)}-character line", Severity.MAJOR))
+    return out
+
+
+def _check_newline_eof(content: str, lines: list, f: str) -> list[Violation]:
+    if content and not content.endswith("\n"):
+        return [_make(f, len(lines), len(lines[-1]) + 1, "C-A3",
+                      "file not ending with a newline", Severity.INFO)]
+    return []
+
+
+def _check_indentation(lines: list, f: str) -> list[Violation]:
+    out = []
+    for i, line in enumerate(lines, start=1):
+        indent = line[:len(line) - len(line.lstrip(" \t"))]
+        if "\t" in indent:
+            out.append(_make(f, i, indent.index("\t") + 1, "C-L2",
+                             "tab used for indentation", Severity.MINOR))
+        elif len(indent) % 4 != 0:
+            out.append(_make(f, i, 1, "C-L2",
+                             "indentation not done with groups of 4 spaces",
+                             Severity.MINOR))
+    return out
