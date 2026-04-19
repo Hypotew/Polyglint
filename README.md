@@ -60,6 +60,22 @@ src/main.py
 | C-F5 | Functions must not have more than 4 parameters | Major |
 | C-O3 | Max 10 functions per file (max 5 non-static) | Major |
 
+### JavaScript
+
+| Code | Description | Severity |
+|------|-------------|----------|
+| C-F2 | Function names must be `camelCase` and at least 3 characters | Minor |
+| C-F5 | Functions must not have more than 4 parameters | Major |
+| C-O3 | Max 10 functions per file | Major |
+
+### Lua
+
+| Code | Description | Severity |
+|------|-------------|----------|
+| C-F2 | Function names must be `snake_case` and at least 3 characters | Minor |
+| C-F5 | Functions must not have more than 4 parameters | Major |
+| C-O3 | Max 10 functions per file | Major |
+
 ---
 
 ## License
