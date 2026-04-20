@@ -110,3 +110,23 @@ class TestComments:
     def test_comment_in_string_ignored(self):
         lines = ["function foo()", '    x = "val -- not"', "end"]
         assert self._checker_comments(lines) == []
+
+    def test_for_do_not_double_counted(self):
+        lines = [
+            "function foo()",
+            "    for i = 1, 10 do",
+            "        x = i",
+            "    end",
+            "end",
+        ]
+        assert self._checker_comments(lines) == []
+
+    def test_while_do_not_double_counted(self):
+        lines = [
+            "function foo()",
+            "    while true do",
+            "        x = 1",
+            "    end",
+            "end",
+        ]
+        assert self._checker_comments(lines) == []
