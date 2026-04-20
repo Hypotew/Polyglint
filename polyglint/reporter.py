@@ -7,6 +7,7 @@ YELLOW = "\033[33m"
 GREEN  = "\033[32m"
 WHITE  = "\033[37m"
 PINK   = "\033[95m"
+BOLD   = "\033[1m"
 
 SEVERITY_COLOR = {
     Severity.FATAL: RED,
@@ -57,12 +58,12 @@ def _print_violation(v: Violation, lines: list) -> None:
     label = SEVERITY_LABEL.get(v.severity, "Info")
     location = f"{v.file}:{v.line}:{v.col}: "
     rest = f"[Banana] [{label}] {v.message} ({v.rule})"
-    print(f"{WHITE}{location}{PINK}warning:{RESET} {WHITE}{rest}{RESET}")
+    print(f"{BOLD}{WHITE}{location}{PINK}warning:{RESET} {BOLD}{WHITE}{rest}{RESET}")
     if 0 < v.line <= len(lines):
         source = lines[v.line - 1]
         pad = " " * len(str(v.line))
         print(f"  {v.line} | {source}")
-        print(f"  {pad} | {' ' * (v.col - 1)}^")
+        print(f"  {pad} | {' ' * (v.col - 1)}{GREEN}^{RESET}" )
 
 
 def _print_summary(total: int) -> None:
