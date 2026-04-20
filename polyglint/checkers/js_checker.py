@@ -34,10 +34,10 @@ def _check_func_naming(funcs: list, f: str) -> list[Violation]:
                 file=f, line=line, col=col, rule="C-F2",
                 message="function name too short", severity=Severity.MINOR
             ))
-        if not re.match(r'^[a-z][a-zA-Z0-9]*$', name):
+        if not re.match(r'^[a-z][a-z0-9_]*$', name):
             out.append(Violation(
                 file=f, line=line, col=col, rule="C-F2",
-                message="non-camelCase function name", severity=Severity.MINOR
+                message="non-snake-case function name", severity=Severity.MINOR
             ))
     return out
 
@@ -52,6 +52,22 @@ def _check_func_params(funcs: list, f: str) -> list[Violation]:
                 message=msg, severity=Severity.MAJOR
             ))
     return out
+
+
+def _func_body_set(lines: list) -> set:
+    body, depth, func_depths = set(), 0, []
+    for i, line in enumerate(lines, start=1):
+        clean = re.sub('"[^"]*"|\'[^\']*\'', '""', line)
+        m = clean.find('//')
+        code = clean[:m] if m != -1 else clean
+        is_decl = bool(FUNC_DECL.search(code) or ARROW_FUNC.search(code))
+        if is_decl:
+            func_depths.append(depth)
+        depth += code.count('{') - code.count('}')
+        func_depths = [d for d in func_depths if depth > d]
+        if func_depths and not is_decl:
+            body.add(i)
+    return body
 
 
 def _check_func_count(funcs: list, f: str) -> list[Violation]:
@@ -80,10 +96,13 @@ class JsChecker(BaseChecker):
 
     def _check_comments(self, lines, f):
         out = []
+        body = _func_body_set(lines)
         for i, line in enumerate(lines, start=1):
+            if i not in body:
+                continue
             clean = re.sub('"[^"]*"|\'[^\']*\'', '""', line)
             idx = clean.find('//')
-            if idx != -1 and clean[:idx].strip():
+            if idx != -1:
                 out.append(Violation(
                     file=f, line=i, col=idx + 1, rule="C-F8",
                     message="comment inside function",
