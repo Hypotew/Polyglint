@@ -8,13 +8,14 @@ Polyglint enforces a consistent set of style rules across all your files and rep
 
 ## Installation
 
-Download the latest release from the [Releases page](https://github.com/Hypotew/Polyglint/releases) and run the installer:
+Install `pipx` if not already present, then download the latest release from the [Releases page](https://github.com/Hypotew/Polyglint/releases) and run the installer:
 
 ```bash
+sudo apt install pipx
 tar -xzf polyglint-*.tar.gz
 cd polyglint-*/
 ./install.sh
-source ~/.zshrc  # or ~/.bashrc
+source ~/.zshrc  # or ~/.bashrc — then polyglint is available globally
 ```
 
 ## Usage
@@ -83,6 +84,14 @@ src/main.py:42:81: warning: [Polyglint] [Major] 95-character line (C-F3)
 | C-F2 | Function names must be `snake_case` and at least 3 characters | Minor |
 | C-F5 | Functions must not have more than 4 parameters | Major |
 | C-O3 | Max 10 functions per file | Major |
+
+---
+
+## Uninstall
+
+```bash
+pipx uninstall polyglint
+```
 
 ---
 
