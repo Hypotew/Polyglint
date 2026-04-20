@@ -9,13 +9,32 @@ class PythonChecker(BaseChecker):
     def _check_language(self, file_path: Path) -> list[Violation]:
         source = file_path.read_text(encoding="utf-8")
         tree = ast.parse(source)
+        lines = source.splitlines()
         f = str(file_path)
         return (
             _check_func_naming(tree, f)
             + _check_func_params(tree, f)
             + _check_func_length(tree, f)
             + _check_func_count(tree, f)
+            + self._check_comments(tree, lines, f)
         )
+
+    def _check_comments(self, tree, lines, f):
+        out = []
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for ln in range(node.lineno + 1, node.end_lineno + 1):
+                src = lines[ln - 1] if ln <= len(lines) else ""
+                clean = re.sub('"[^"]*"|\'[^\']*\'', '""', src)
+                idx = clean.find('#')
+                if idx != -1:
+                    out.append(Violation(
+                        file=f, line=ln, col=idx + 1, rule="C-F8",
+                        message="comment inside function",
+                        severity=Severity.MINOR
+                    ))
+        return out
 
 
 def _check_func_naming(tree: ast.Module, f: str) -> list[Violation]:

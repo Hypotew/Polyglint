@@ -3,6 +3,7 @@ from polyglint.checkers.lua_checker import (
     _check_func_naming,
     _check_func_params,
     _check_func_count,
+    LuaChecker,
 )
 
 F = "test.lua"
@@ -81,3 +82,22 @@ class TestFuncCount:
         assert len(v) == 1
         assert v[0].rule == "C-O3"
         assert "11th" in v[0].message
+
+
+class TestComments:
+    def _checker_comments(self, lines):
+        return LuaChecker()._check_comments(lines, F)
+
+    def test_inline_comment_flagged(self):
+        lines = ["x = 1  -- bad comment"]
+        v = self._checker_comments(lines)
+        assert len(v) == 1
+        assert v[0].rule == "C-F8"
+
+    def test_standalone_comment_ok(self):
+        lines = ["-- top level comment"]
+        assert self._checker_comments(lines) == []
+
+    def test_comment_in_string_ignored(self):
+        lines = ['x = "value -- not a comment"']
+        assert self._checker_comments(lines) == []

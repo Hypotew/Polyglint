@@ -5,6 +5,7 @@ from polyglint.checkers.python_checker import (
     _check_func_params,
     _check_func_length,
     _check_func_count,
+    PythonChecker,
 )
 
 F = "test.py"
@@ -105,3 +106,33 @@ class TestFuncCount:
         funcs = self._make_funcs(5)
         tree = parse(funcs)
         assert _check_func_count(tree, F) == []
+
+
+class TestComments:
+    def _checker_comments(self, source):
+        tree = ast.parse(source)
+        lines = source.splitlines()
+        checker = PythonChecker()
+        return checker._check_comments(tree, lines, F)
+
+    def test_comment_inside_function_flagged(self):
+        source = "def foo():\n    x = 1  # bad\n"
+        v = self._checker_comments(source)
+        assert len(v) == 1
+        assert v[0].rule == "C-F8"
+
+    def test_comment_outside_function_ok(self):
+        source = "# top level\ndef foo():\n    x = 1\n"
+        v = self._checker_comments(source)
+        assert v == []
+
+    def test_comment_in_string_ignored(self):
+        source = 'def foo():\n    x = "# not a comment"\n'
+        v = self._checker_comments(source)
+        assert v == []
+
+    def test_async_function_comment_flagged(self):
+        source = "async def foo():\n    x = 1  # bad\n"
+        v = self._checker_comments(source)
+        assert len(v) == 1
+        assert v[0].rule == "C-F8"

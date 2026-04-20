@@ -69,4 +69,18 @@ class LuaChecker(BaseChecker):
             _check_func_naming(funcs, f)
             + _check_func_params(funcs, f)
             + _check_func_count(funcs, f)
+            + self._check_comments(lines, f)
         )
+
+    def _check_comments(self, lines, f):
+        out = []
+        for i, line in enumerate(lines, start=1):
+            clean = re.sub('"[^"]*"|\'[^\']*\'', '""', line)
+            idx = clean.find('--')
+            if idx != -1 and clean[:idx].strip():
+                out.append(Violation(
+                    file=f, line=i, col=idx + 1, rule="C-F8",
+                    message="comment inside function",
+                    severity=Severity.MINOR
+                ))
+        return out
