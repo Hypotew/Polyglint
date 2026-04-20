@@ -8,9 +8,11 @@ Polyglint enforces a consistent set of style rules across all your files and rep
 
 ## Installation
 
+Download the latest release from the [Releases page](https://github.com/Hypotew/Polyglint/releases) and run the installer:
+
 ```bash
-git clone https://github.com/Hypotew/Polyglint.git
-cd Polyglint
+tar -xzf polyglint-*.tar.gz
+cd polyglint-*/
 ./install.sh
 source ~/.zshrc  # or ~/.bashrc
 ```
@@ -30,12 +32,14 @@ polyglint src/ main.py
 ## Output
 
 ```
-src/main.py
-  line 3,  col 1    [C-G8]  leading empty line
-  line 42, col 81   [C-F3]  95-character line
-  line 78, col 1    [C-F2]  non-snake-case function name
+src/main.py:3:1: warning: [Polyglint] [Minor] leading empty line (C-G8)
+  3 |
+    | ^
+src/main.py:42:81: warning: [Polyglint] [Major] 95-character line (C-F3)
+  42 | x = some_very_long_line...
+     |                                                                                 ^
 
-2 major, 1 minor in 1 file
+2 warnings generated.
 ```
 
 ---
@@ -50,7 +54,9 @@ src/main.py
 | C-G7 | No trailing whitespace | Minor |
 | C-G8 | No leading or trailing empty lines | Minor |
 | C-F3 | Max 80 columns per line | Major |
+| C-F8 | No inline comments inside functions | Minor |
 | C-L2 | Indentation must use 4 spaces, no tabs | Minor |
+| C-L3 | No space before closing parenthesis | Minor |
 | C-A3 | File must end with a newline | Info |
 
 ### Python
@@ -66,7 +72,7 @@ src/main.py
 
 | Code | Description | Severity |
 |------|-------------|----------|
-| C-F2 | Function names must be `camelCase` and at least 3 characters | Minor |
+| C-F2 | Function names must be `snake_case` and at least 3 characters | Minor |
 | C-F5 | Functions must not have more than 4 parameters | Major |
 | C-O3 | Max 10 functions per file | Major |
 

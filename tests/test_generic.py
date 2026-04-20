@@ -5,6 +5,7 @@ from polyglint.checkers.generic_checks import (
     _check_line_issues,
     _check_indentation,
 )
+from polyglint.checkers.paren_checks import _check_space_before_paren
 
 F = "test.py"
 
@@ -144,3 +145,32 @@ class TestIndentation:
     def test_no_indent_ok(self):
         lines = ["x = 1"]
         assert _check_indentation(lines, F) == []
+
+
+class TestSpaceBeforeParen:
+    def test_space_before_closing_paren(self):
+        lines = ["foo( x )"]
+        v = _check_space_before_paren(lines, F)
+        assert len(v) == 1
+        assert v[0].rule == "C-L3"
+
+    def test_closing_paren_own_line_ok(self):
+        lines = ["foo(", "    x", "    )"]
+        assert _check_space_before_paren(lines, F) == []
+
+    def test_no_space_before_paren_ok(self):
+        lines = ["foo(x)"]
+        assert _check_space_before_paren(lines, F) == []
+
+    def test_space_in_comment_ignored(self):
+        lines = ["x = 1  # foo( x )"]
+        assert _check_space_before_paren(lines, F) == []
+
+    def test_space_in_string_ignored(self):
+        lines = ['x = "foo( x )"']
+        assert _check_space_before_paren(lines, F) == []
+
+    def test_col_points_to_space(self):
+        lines = ["foo( x )"]
+        v = _check_space_before_paren(lines, F)
+        assert v[0].col == 7

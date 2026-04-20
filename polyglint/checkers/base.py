@@ -8,6 +8,7 @@ from polyglint.checkers.generic_checks import (
     _check_line_issues,
     _check_indentation,
 )
+from polyglint.checkers.paren_checks import _check_space_before_paren
 
 
 def ordinal(n: int) -> str:
@@ -30,6 +31,7 @@ class BaseChecker(ABC):
             + _check_line_endings(content, f)
             + _check_line_issues(lines, content, f)
             + _check_indentation(lines, f)
+            + _check_space_before_paren(lines, f)
         )
 
     @abstractmethod

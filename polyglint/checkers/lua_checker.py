@@ -6,6 +6,9 @@ from polyglint.violation import Violation, Severity
 FUNC_PATTERN = re.compile(
     r'(?:local\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_:.]*)\s*\(([^)]*)\)'
 )
+_BLOCK_OPEN = re.compile(r'\b(?:function|if|for|while|repeat)\b')
+_BLOCK_CLOSE = re.compile(r'\b(?:end|until)\b')
+_FOR_WHILE_DO = re.compile(r'\b(?:for|while)\b.*?\bdo\b')
 
 
 def _parse_funcs(lines: list) -> list:
@@ -48,6 +51,25 @@ def _check_func_params(funcs: list, f: str) -> list[Violation]:
     return out
 
 
+def _func_body_set(lines: list) -> set:
+    body, depth, func_depths = set(), 0, []
+    for i, line in enumerate(lines, start=1):
+        clean = re.sub('"[^"]*"|\'[^\']*\'', '""', line)
+        m = re.search('--', clean)
+        code = clean[:m.start()] if m else clean
+        is_decl = bool(FUNC_PATTERN.search(code))
+        if is_decl:
+            func_depths.append(depth)
+        opens = len(_BLOCK_OPEN.findall(code))
+        opens += len(re.findall(r'\bdo\b', code))
+        opens -= len(_FOR_WHILE_DO.findall(code))
+        depth += opens - len(_BLOCK_CLOSE.findall(code))
+        func_depths = [d for d in func_depths if depth > d]
+        if func_depths and not is_decl:
+            body.add(i)
+    return body
+
+
 def _check_func_count(funcs: list, f: str) -> list[Violation]:
     out = []
     for idx, (line, col, _, _, _) in enumerate(funcs, start=1):
@@ -69,4 +91,21 @@ class LuaChecker(BaseChecker):
             _check_func_naming(funcs, f)
             + _check_func_params(funcs, f)
             + _check_func_count(funcs, f)
+            + self._check_comments(lines, f)
         )
+
+    def _check_comments(self, lines, f):
+        out = []
+        body = _func_body_set(lines)
+        for i, line in enumerate(lines, start=1):
+            if i not in body:
+                continue
+            clean = re.sub('"[^"]*"|\'[^\']*\'', '""', line)
+            idx = clean.find('--')
+            if idx != -1:
+                out.append(Violation(
+                    file=f, line=i, col=idx + 1, rule="C-F8",
+                    message="comment inside function",
+                    severity=Severity.MINOR
+                ))
+        return out
