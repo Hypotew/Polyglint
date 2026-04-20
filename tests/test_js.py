@@ -41,18 +41,18 @@ class TestFuncNaming:
         funcs = [(1, 1, 5, "fn", [])]
         assert "C-F2" in rules(_check_func_naming(funcs, F))
 
-    def test_non_camel_case(self):
-        funcs = [(1, 1, 8, "my_func", [])]
+    def test_non_snake_case(self):
+        funcs = [(1, 1, 8, "myFunc", [])]
         assert "C-F2" in rules(_check_func_naming(funcs, F))
 
-    def test_valid_camel_case(self):
-        funcs = [(1, 1, 10, "myFunc", [])]
+    def test_valid_snake_case(self):
+        funcs = [(1, 1, 10, "my_func", [])]
         assert _check_func_naming(funcs, F) == []
 
-    def test_message_non_camel(self):
-        funcs = [(1, 1, 8, "my_func", [])]
+    def test_message_non_snake(self):
+        funcs = [(1, 1, 8, "myFunc", [])]
         v = _check_func_naming(funcs, F)
-        assert any("camelCase" in v2.message for v2 in v)
+        assert any("snake" in v2.message for v2 in v)
 
 
 class TestFuncParams:
@@ -90,15 +90,24 @@ class TestComments:
         return JsChecker()._check_comments(lines, F)
 
     def test_inline_comment_flagged(self):
-        lines = ["x = 1;  // bad comment"]
+        lines = ["function foo() {", "    x = 1;  // bad", "}"]
         v = self._checker_comments(lines)
         assert len(v) == 1
         assert v[0].rule == "C-F8"
 
-    def test_standalone_comment_ok(self):
+    def test_standalone_comment_inside_function_flagged(self):
+        lines = ["function foo() {", "    // bad", "}"]
+        v = self._checker_comments(lines)
+        assert len(v) == 1
+
+    def test_top_level_inline_comment_ok(self):
+        lines = ["const x = 1;  // top level"]
+        assert self._checker_comments(lines) == []
+
+    def test_standalone_comment_top_level_ok(self):
         lines = ["// top level comment"]
         assert self._checker_comments(lines) == []
 
     def test_comment_in_string_ignored(self):
-        lines = ['x = "value // not a comment";']
+        lines = ["function foo() {", '    x = "val // not";', "}"]
         assert self._checker_comments(lines) == []
