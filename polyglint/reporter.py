@@ -32,13 +32,6 @@ _KEYWORDS = {
     },
 }
 
-SEVERITY_COLOR = {
-    Severity.FATAL: RED,
-    Severity.MAJOR: RED,
-    Severity.MINOR: YELLOW,
-    Severity.INFO:  WHITE,
-}
-
 SEVERITY_LABEL = {
     Severity.FATAL: "Fatal",
     Severity.MAJOR: "Major",
