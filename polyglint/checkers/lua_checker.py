@@ -6,8 +6,9 @@ from polyglint.violation import Violation, Severity
 FUNC_PATTERN = re.compile(
     r'(?:local\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_:.]*)\s*\(([^)]*)\)'
 )
-_BLOCK_OPEN = re.compile(r'\b(?:function|if|for|while|do|repeat)\b')
+_BLOCK_OPEN = re.compile(r'\b(?:function|if|for|while|repeat)\b')
 _BLOCK_CLOSE = re.compile(r'\b(?:end|until)\b')
+_FOR_WHILE_DO = re.compile(r'\b(?:for|while)\b.*?\bdo\b')
 
 
 def _parse_funcs(lines: list) -> list:
@@ -60,6 +61,8 @@ def _func_body_set(lines: list) -> set:
         if is_decl:
             func_depths.append(depth)
         opens = len(_BLOCK_OPEN.findall(code))
+        opens += len(re.findall(r'\bdo\b', code))
+        opens -= len(_FOR_WHILE_DO.findall(code))
         depth += opens - len(_BLOCK_CLOSE.findall(code))
         func_depths = [d for d in func_depths if depth > d]
         if func_depths and not is_decl:
