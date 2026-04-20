@@ -72,7 +72,7 @@ src/main.py:42:81: warning: [Polyglint] [Major] 95-character line (C-F3)
 
 | Code | Description | Severity |
 |------|-------------|----------|
-| C-F2 | Function names must be `camelCase` and at least 3 characters | Minor |
+| C-F2 | Function names must be `snake_case` and at least 3 characters | Minor |
 | C-F5 | Functions must not have more than 4 parameters | Major |
 | C-O3 | Max 10 functions per file | Major |
 
