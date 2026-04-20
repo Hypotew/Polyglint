@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from polyglint.violation import Violation, Severity
 
@@ -8,6 +9,28 @@ GREEN  = "\033[32m"
 WHITE  = "\033[37m"
 PINK   = "\033[95m"
 BOLD   = "\033[1m"
+BLUE   = "\033[34m"
+
+_KEYWORDS = {
+    ".py":  {
+        "def", "class", "if", "elif", "else", "for", "while", "return",
+        "import", "from", "as", "with", "try", "except", "finally",
+        "raise", "pass", "break", "continue", "and", "or", "not", "in",
+        "is", "lambda", "yield", "async", "await", "True", "False", "None",
+    },
+    ".js":  {
+        "function", "const", "let", "var", "if", "else", "for", "while",
+        "return", "class", "new", "this", "import", "export", "from",
+        "async", "await", "try", "catch", "finally", "throw", "break",
+        "continue", "switch", "case", "default", "typeof", "instanceof",
+        "true", "false", "null", "undefined",
+    },
+    ".lua": {
+        "function", "local", "if", "then", "else", "elseif", "end",
+        "for", "while", "do", "repeat", "until", "return", "break",
+        "and", "or", "not", "in", "nil", "true", "false",
+    },
+}
 
 SEVERITY_COLOR = {
     Severity.FATAL: RED,
@@ -29,7 +52,8 @@ def report(results: dict[str, list[Violation]]) -> int:
         print(f"{GREEN}No violations found.{RESET}")
         return 0
     total = _print_violations(results)
-    _print_summary(total)
+    label = "warning" if total == 1 else "warnings"
+    print(f"\n{total} {label} generated.")
     return 1
 
 
@@ -53,19 +77,24 @@ def _read_lines(file: str, cache: dict) -> list:
     return cache[file]
 
 
+def _highlight_keywords(source: str, ext: str) -> str:
+    keywords = _KEYWORDS.get(ext, set())
+    if not keywords:
+        return source
+    pattern = r'\b(' + '|'.join(re.escape(k) for k in keywords) + r')\b'
+    return re.sub(pattern, lambda m: f"{BLUE}{m.group()}{WHITE}", source)
+
+
 def _print_violation(v: Violation, lines: list) -> None:
-    color = SEVERITY_COLOR.get(v.severity, WHITE)
     label = SEVERITY_LABEL.get(v.severity, "Info")
     location = f"{v.file}:{v.line}:{v.col}: "
-    rest = f"[Banana] [{label}] {v.message} ({v.rule})"
-    print(f"{BOLD}{WHITE}{location}{PINK}warning:{RESET} {BOLD}{WHITE}{rest}{RESET}")
+    rest = f"[Polyglint] [{label}] {v.message} ({v.rule})"
+    prefix = f"{BOLD}{WHITE}{location}{PINK}warning:{RESET} "
+    print(f"{prefix}{BOLD}{WHITE}{rest}{RESET}")
     if 0 < v.line <= len(lines):
         source = lines[v.line - 1]
+        ext = Path(v.file).suffix
+        highlighted = _highlight_keywords(source, ext)
         pad = " " * len(str(v.line))
-        print(f"  {v.line} | {source}")
-        print(f"  {pad} | {' ' * (v.col - 1)}{GREEN}^{RESET}" )
-
-
-def _print_summary(total: int) -> None:
-    label = "warning" if total == 1 else "warnings"
-    print(f"\n{total} {label} generated.")
+        print(f"  {v.line} | {WHITE}{highlighted}{RESET}")
+        print(f"  {pad} | {' ' * (v.col - 1)}{GREEN}^{RESET}")
