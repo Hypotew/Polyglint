@@ -92,6 +92,9 @@ class JsChecker(BaseChecker):
             + _check_func_params(funcs, f)
             + _check_func_count(funcs, f)
             + self._check_comments(lines, f)
+            + self._check_func_length(lines, f)
+            + self._check_func_separation(lines, f)
+            + self._check_curly_brackets(lines, f)
         )
 
     def _check_comments(self, lines, f):
@@ -108,4 +111,68 @@ class JsChecker(BaseChecker):
                     message="comment inside function",
                     severity=Severity.MINOR
                 ))
+        return out
+
+    def _check_func_length(self, lines, f):
+        out = []
+        depth, func_stack, pending = 0, [], []
+        for i, line in enumerate(lines, start=1):
+            clean = re.sub('"[^"]*"|\'[^\']*\'', '""', line)
+            m = clean.find('//')
+            code = clean[:m] if m != -1 else clean
+            if FUNC_DECL.search(code) or ARROW_FUNC.search(code):
+                pending.append(i)
+            prev_depth, depth = depth, depth + code.count('{') - code.count('}')
+            if depth > prev_depth and pending:
+                func_stack += [(s, i + 1, prev_depth) for s in pending]
+                pending = []
+            closed = [(s, b, d) for s, b, d in func_stack if depth <= d]
+            func_stack = [(s, b, d) for s, b, d in func_stack if depth > d]
+            for _, body_start, _ in closed:
+                for ln in range(body_start + 20, i):
+                    n = ln - body_start + 1
+                    out.append(Violation(f, ln, 1, "C-F4",
+                        f"{ordinal(n)} line in the function", Severity.MAJOR))
+        return out
+
+    def _check_func_separation(self, lines, f):
+        ranges, depth, func_stack, pending = [], 0, [], []
+        for i, line in enumerate(lines, start=1):
+            clean = re.sub('"[^"]*"|\'[^\']*\'', '""', line)
+            m = clean.find('//')
+            code = clean[:m] if m != -1 else clean
+            if FUNC_DECL.search(code) or ARROW_FUNC.search(code):
+                pending.append(i)
+            prev_depth, depth = depth, depth + code.count('{') - code.count('}')
+            if depth > prev_depth and pending:
+                func_stack += [(s, prev_depth) for s in pending]
+                pending = []
+            ranges += [(s, i) for s, d in func_stack if depth <= d and d == 0]
+            func_stack = [(s, d) for s, d in func_stack if depth > d]
+        out = []
+        for j in range(len(ranges) - 1):
+            end, start = ranges[j][1], ranges[j + 1][0]
+            if not any(not l.strip() for l in lines[end:start - 1]):
+                out.append(Violation(f, start, 1, "C-G2",
+                    "missing empty line between functions"))
+        return out
+
+    def _check_curly_brackets(self, lines, f):
+        out = []
+        for i, line in enumerate(lines, start=1):
+            clean = re.sub('"[^"]*"|\'[^\']*\'', '""', line)
+            m = clean.find('//')
+            code = clean[:m] if m != -1 else clean
+            stripped = code.strip()
+            if stripped.startswith('}') and stripped != '}':
+                rest = stripped[1:].lstrip()
+                allowed = ('else', 'catch', 'finally', 'while')
+                if not any(rest.startswith(a) for a in allowed):
+                    col = line.index('}') + 1
+                    out.append(Violation(f, i, col, "C-L4",
+                        "closing brace not alone on its line"))
+            if FUNC_DECL.search(code) and '{' in code:
+                col = code.index('{') + 1
+                out.append(Violation(f, i, col, "C-L4",
+                    "function opening brace must be on its own line"))
         return out

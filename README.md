@@ -51,13 +51,16 @@ src/main.py:42:81: warning: [Polyglint] [Major] 95-character line (C-F3)
 
 | Code | Description | Severity |
 |------|-------------|----------|
+| C-O4 | File and folder names must be `snake_case` | Minor |
+| C-G1 | File must start with a header comment | Minor |
+| C-G2 | Functions must be separated by exactly one empty line | Minor |
 | C-G6 | No `\r` line endings | Minor |
 | C-G7 | No trailing whitespace | Minor |
 | C-G8 | No leading or trailing empty lines | Minor |
 | C-F3 | Max 80 columns per line | Major |
 | C-F8 | No inline comments inside functions | Minor |
 | C-L2 | Indentation must use 4 spaces, no tabs | Minor |
-| C-L3 | No space before closing parenthesis | Minor |
+| C-L3 | No space before `)` or `,`; space required after `,` | Minor |
 | C-A3 | File must end with a newline | Info |
 
 ### Python
@@ -74,7 +77,9 @@ src/main.py:42:81: warning: [Polyglint] [Major] 95-character line (C-F3)
 | Code | Description | Severity |
 |------|-------------|----------|
 | C-F2 | Function names must be `snake_case` and at least 3 characters | Minor |
+| C-F4 | Function body must not exceed 20 lines | Major |
 | C-F5 | Functions must not have more than 4 parameters | Major |
+| C-L4 | Opening `{` of a function on its own line; closing `}` alone on its line | Minor |
 | C-O3 | Max 10 functions per file | Major |
 
 ### Lua
@@ -82,6 +87,7 @@ src/main.py:42:81: warning: [Polyglint] [Major] 95-character line (C-F3)
 | Code | Description | Severity |
 |------|-------------|----------|
 | C-F2 | Function names must be `snake_case` and at least 3 characters | Minor |
+| C-F4 | Function body must not exceed 20 lines | Major |
 | C-F5 | Functions must not have more than 4 parameters | Major |
 | C-O3 | Max 10 functions per file | Major |
 

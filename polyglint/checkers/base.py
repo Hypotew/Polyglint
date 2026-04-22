@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from polyglint.violation import Violation
+from polyglint.violation import Violation, Severity
 from polyglint.checkers.generic_checks import (
     _check_empty_lines,
     _check_trailing_whitespace,
@@ -8,7 +8,30 @@ from polyglint.checkers.generic_checks import (
     _check_line_issues,
     _check_indentation,
 )
-from polyglint.checkers.paren_checks import _check_space_before_paren
+from polyglint.checkers.paren_checks import (
+    _check_space_before_paren,
+    _check_space_before_comma,
+    _check_space_after_comma,
+)
+
+
+_HEADER_STARTS = {
+    '.py': ('#',), '.js': ('//', '/*'), '.lua': ('--',),
+}
+
+
+def _check_file_header(lines, f, ext):
+    starts = _HEADER_STARTS.get(ext, ())
+    if not starts:
+        return []
+    for line in lines:
+        if not line.strip():
+            continue
+        if not any(line.lstrip().startswith(s) for s in starts):
+            return [Violation(f, 1, 1, "C-G1",
+                "missing file header comment", Severity.MINOR)]
+        return []
+    return []
 
 
 def ordinal(n: int) -> str:
@@ -25,13 +48,17 @@ class BaseChecker(ABC):
         content = file_path.read_text(encoding="utf-8")
         lines = content.splitlines()
         f = str(file_path)
+        ext = file_path.suffix
         return (
-            _check_empty_lines(lines, f)
+            _check_file_header(lines, f, ext)
+            + _check_empty_lines(lines, f)
             + _check_trailing_whitespace(lines, f)
             + _check_line_endings(content, f)
             + _check_line_issues(lines, content, f)
             + _check_indentation(lines, f)
             + _check_space_before_paren(lines, f)
+            + _check_space_before_comma(lines, f)
+            + _check_space_after_comma(lines, f)
         )
 
     @abstractmethod

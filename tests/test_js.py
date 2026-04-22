@@ -111,3 +111,82 @@ class TestComments:
     def test_comment_in_string_ignored(self):
         lines = ["function foo() {", '    x = "val // not";', "}"]
         assert self._checker_comments(lines) == []
+
+
+class TestCurlyBrackets:
+    def _check(self, lines):
+        return JsChecker()._check_curly_brackets(lines, F)
+
+    def test_closing_brace_not_alone_flagged(self):
+        lines = ["function foo()", "{", "    return 1;", "} return 0;"]
+        v = self._check(lines)
+        assert any(v2.rule == "C-L4" for v2 in v)
+
+    def test_closing_brace_alone_ok(self):
+        lines = ["function foo()", "{", "    return 1;", "}"]
+        assert self._check(lines) == []
+
+    def test_closing_else_ok(self):
+        lines = ["} else {"]
+        assert self._check(lines) == []
+
+    def test_closing_catch_ok(self):
+        lines = ["} catch (e) {"]
+        assert self._check(lines) == []
+
+    def test_closing_finally_ok(self):
+        lines = ["} finally {"]
+        assert self._check(lines) == []
+
+    def test_function_brace_same_line_flagged(self):
+        lines = ["function foo() {"]
+        v = self._check(lines)
+        assert any(v2.rule == "C-L4" for v2 in v)
+
+    def test_function_brace_own_line_ok(self):
+        lines = ["function foo()", "{"]
+        assert self._check(lines) == []
+
+
+class TestFuncLength:
+    def _check(self, lines):
+        return JsChecker()._check_func_length(lines, F)
+
+    def test_function_within_limit_ok(self):
+        lines = ["function foo()", "{"] + ["    x = 1;"] * 20 + ["}"]
+        assert self._check(lines) == []
+
+    def test_function_over_limit_flagged(self):
+        lines = ["function foo()", "{"] + ["    x = 1;"] * 21 + ["}"]
+        v = self._check(lines)
+        assert any(v2.rule == "C-F4" for v2 in v)
+
+    def test_violation_at_21st_body_line(self):
+        lines = ["function foo() {"] + ["    x = 1;"] * 21 + ["}"]
+        v = self._check(lines)
+        assert v[0].line == 22
+
+
+class TestFuncSeparation:
+    def _check(self, lines):
+        return JsChecker()._check_func_separation(lines, F)
+
+    def test_missing_empty_line_flagged(self):
+        lines = [
+            "function foo()", "{", "    return 1;", "}",
+            "function bar()", "{", "    return 2;", "}",
+        ]
+        v = self._check(lines)
+        assert any(v2.rule == "C-G2" for v2 in v)
+
+    def test_empty_line_between_ok(self):
+        lines = [
+            "function foo()", "{", "    return 1;", "}",
+            "",
+            "function bar()", "{", "    return 2;", "}",
+        ]
+        assert self._check(lines) == []
+
+    def test_single_function_ok(self):
+        lines = ["function foo()", "{", "    return 1;", "}"]
+        assert self._check(lines) == []

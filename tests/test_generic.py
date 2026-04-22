@@ -5,7 +5,11 @@ from polyglint.checkers.generic_checks import (
     _check_line_issues,
     _check_indentation,
 )
-from polyglint.checkers.paren_checks import _check_space_before_paren
+from polyglint.checkers.paren_checks import (
+    _check_space_before_paren,
+    _check_space_before_comma,
+    _check_space_after_comma,
+)
 
 F = "test.py"
 
@@ -174,3 +178,53 @@ class TestSpaceBeforeParen:
         lines = ["foo( x )"]
         v = _check_space_before_paren(lines, F)
         assert v[0].col == 7
+
+
+class TestSpaceBeforeComma:
+    def test_space_before_comma_flagged(self):
+        lines = ["foo(a , b)"]
+        v = _check_space_before_comma(lines, F)
+        assert len(v) == 1
+        assert v[0].rule == "C-L3"
+
+    def test_no_space_before_comma_ok(self):
+        lines = ["foo(a, b)"]
+        assert _check_space_before_comma(lines, F) == []
+
+    def test_space_in_comment_ignored(self):
+        lines = ["x = 1  # foo(a , b)"]
+        assert _check_space_before_comma(lines, F) == []
+
+    def test_space_in_string_ignored(self):
+        lines = ['x = "foo(a , b)"']
+        assert _check_space_before_comma(lines, F) == []
+
+    def test_col_points_to_space(self):
+        lines = ["foo(a , b)"]
+        v = _check_space_before_comma(lines, F)
+        assert v[0].col == 6
+
+
+class TestSpaceAfterComma:
+    def test_missing_space_after_comma_flagged(self):
+        lines = ["foo(a,b)"]
+        v = _check_space_after_comma(lines, F)
+        assert len(v) == 1
+        assert v[0].rule == "C-L3"
+
+    def test_space_after_comma_ok(self):
+        lines = ["foo(a, b)"]
+        assert _check_space_after_comma(lines, F) == []
+
+    def test_trailing_comma_ok(self):
+        lines = ["foo(a,"]
+        assert _check_space_after_comma(lines, F) == []
+
+    def test_space_in_comment_ignored(self):
+        lines = ["x = 1  # foo(a,b)"]
+        assert _check_space_after_comma(lines, F) == []
+
+    def test_col_points_to_comma(self):
+        lines = ["foo(a,b)"]
+        v = _check_space_after_comma(lines, F)
+        assert v[0].col == 6

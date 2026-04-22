@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from polyglint.checkers import get_checker
 from polyglint.violation import Violation
@@ -5,6 +6,7 @@ from polyglint.violation import Violation
 EXCLUDED_DIRS = {
     ".git", "__pycache__", "node_modules", ".venv", "venv", "tests"
 }
+_SNAKE = re.compile(r'^[a-z][a-z0-9_]*$')
 
 
 def run(paths: list[Path]) -> dict[str, list[Violation]]:
@@ -25,10 +27,18 @@ def _walk(root: Path, results: dict) -> None:
             _check_file(item, results)
 
 
+def _name_violations(path: Path) -> list:
+    if _SNAKE.match(path.stem):
+        return []
+    msg = f"non-snake-case file name '{path.stem}'"
+    return [Violation(str(path), 1, 1, "C-O4", msg)]
+
+
 def _check_file(path: Path, results: dict) -> None:
     checker = get_checker(path)
     if checker is None:
         return
-    violations = checker.check(path)
+    f = str(path)
+    violations = _name_violations(path) + checker.check(path)
     if violations:
-        results[str(path)] = violations
+        results[f] = violations

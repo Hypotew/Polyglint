@@ -24,3 +24,31 @@ def _check_space_before_paren(lines: list, f: str) -> list[Violation]:
                 ))
             pos = idx + 1
     return out
+
+
+def _check_space_before_comma(lines: list, f: str) -> list[Violation]:
+    out = []
+    for i, line in enumerate(lines, start=1):
+        clean = _STRINGS.sub('""', line)
+        m = _COMMENT.search(clean)
+        code = clean[:m.start()] if m else clean
+        for match in re.finditer(r'[ \t]+,', code):
+            out.append(Violation(
+                file=f, line=i, col=match.start() + 1, rule="C-L3",
+                message="space before comma", severity=Severity.MINOR
+            ))
+    return out
+
+
+def _check_space_after_comma(lines: list, f: str) -> list[Violation]:
+    out = []
+    for i, line in enumerate(lines, start=1):
+        clean = _STRINGS.sub('""', line)
+        m = _COMMENT.search(clean)
+        code = clean[:m.start()] if m else clean
+        for match in re.finditer(r',(?=[^\s,\)\]}>])', code):
+            out.append(Violation(
+                file=f, line=i, col=match.start() + 1, rule="C-L3",
+                message="missing space after comma", severity=Severity.MINOR
+            ))
+    return out

@@ -136,3 +136,29 @@ class TestComments:
         v = self._checker_comments(source)
         assert len(v) == 1
         assert v[0].rule == "C-F8"
+
+
+class TestFuncSeparation:
+    def _check(self, source):
+        tree = ast.parse(source)
+        lines = source.splitlines()
+        return PythonChecker()._check_func_separation(tree, lines, F)
+
+    def test_missing_empty_line_flagged(self):
+        src = "def foo():\n    pass\ndef bar():\n    pass\n"
+        v = self._check(src)
+        assert len(v) == 1
+        assert v[0].rule == "C-G2"
+
+    def test_one_empty_line_ok(self):
+        src = "def foo():\n    pass\n\ndef bar():\n    pass\n"
+        assert self._check(src) == []
+
+    def test_single_function_ok(self):
+        src = "def foo():\n    pass\n"
+        assert self._check(src) == []
+
+    def test_violation_points_to_second_func(self):
+        src = "def foo():\n    pass\ndef bar():\n    pass\n"
+        v = self._check(src)
+        assert v[0].line == 3

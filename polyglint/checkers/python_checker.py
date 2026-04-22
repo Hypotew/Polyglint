@@ -17,7 +17,27 @@ class PythonChecker(BaseChecker):
             + _check_func_length(tree, f)
             + _check_func_count(tree, f)
             + self._check_comments(tree, lines, f)
+            + self._check_func_separation(tree, lines, f)
         )
+
+    def _check_func_separation(self, tree, lines, f):
+        types = (ast.FunctionDef, ast.AsyncFunctionDef)
+        funcs = sorted(
+            [n for n in tree.body if isinstance(n, types)],
+            key=lambda n: n.lineno
+        )
+        out = []
+        for i in range(len(funcs) - 1):
+            end = funcs[i].end_lineno
+            start = funcs[i + 1].lineno
+            has_gap = any(not l.strip() for l in lines[end:start - 1])
+            if not has_gap:
+                out.append(Violation(
+                    file=f, line=start, col=1, rule="C-G2",
+                    message="missing empty line between functions",
+                    severity=Severity.MINOR
+                ))
+        return out
 
     def _check_comments(self, tree, lines, f):
         out = []
