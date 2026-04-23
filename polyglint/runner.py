@@ -1,3 +1,4 @@
+# Polyglint file walker and checker runner
 import re
 from pathlib import Path
 from polyglint.checkers import get_checker
@@ -28,9 +29,12 @@ def _walk(root: Path, results: dict) -> None:
 
 
 def _name_violations(path: Path) -> list:
-    if _SNAKE.match(path.stem):
+    stem = path.stem
+    if stem.startswith('__') and stem.endswith('__'):
         return []
-    msg = f"non-snake-case file name '{path.stem}'"
+    if _SNAKE.match(stem):
+        return []
+    msg = f"non-snake-case file name '{stem}'"
     return [Violation(str(path), 1, 1, "C-O4", msg)]
 
 

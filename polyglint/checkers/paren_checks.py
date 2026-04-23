@@ -1,3 +1,4 @@
+# Polyglint parenthesis and comma spacing checks
 import re
 from polyglint.violation import Violation, Severity
 

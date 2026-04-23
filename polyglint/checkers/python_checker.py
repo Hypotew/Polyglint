@@ -1,3 +1,4 @@
+# Polyglint Python checker
 import ast
 import re
 from pathlib import Path

@@ -1,3 +1,4 @@
+# Polyglint checker registry
 from pathlib import Path
 from polyglint.checkers.python_checker import PythonChecker
 from polyglint.checkers.lua_checker import LuaChecker

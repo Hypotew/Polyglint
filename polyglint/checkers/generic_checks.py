@@ -1,3 +1,4 @@
+# Polyglint generic style checks (shared across all languages)
 from polyglint.violation import Violation, Severity
 
 MAX_LINE_LENGTH = 80

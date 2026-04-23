@@ -1,3 +1,4 @@
+# Polyglint Lua checker
 import re
 from pathlib import Path
 from polyglint.checkers.base import BaseChecker, ordinal

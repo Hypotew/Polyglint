@@ -1,3 +1,4 @@
+# Polyglint base checker and generic rule dispatch
 from abc import ABC, abstractmethod
 from pathlib import Path
 from polyglint.violation import Violation, Severity

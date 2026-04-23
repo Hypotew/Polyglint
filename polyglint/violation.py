@@ -1,3 +1,4 @@
+# Polyglint violation data model
 from dataclasses import dataclass
 from enum import Enum
 
